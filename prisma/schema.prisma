@@ -1,0 +1,642 @@
+// ============================================================
+// LUDOTECA CHILENA — Schema Prisma completo
+// Stack: Next.js 14 + PostgreSQL + Prisma ORM
+// ============================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ============================================================
+// ENUMS
+// ============================================================
+
+enum GameStatus {
+  available       // Disponible en el mercado
+  out_of_print    // Descontinuado / agotado
+  lost            // Juego perdido, sin ejemplares conocidos
+  unknown         // Estado desconocido
+}
+
+enum YearCertainty {
+  exact           // Año exacto conocido
+  circa           // Año aproximado (ej. "circa 1975")
+  decade          // Solo se sabe la década (ej. "años 80")
+  unknown         // Año desconocido
+}
+
+enum OriginType {
+  original        // Juego original chileno
+  localization    // Localización de un juego extranjero
+  adaptation      // Adaptación de otro juego
+}
+
+enum PublisherStatus {
+  active
+  inactive
+  unknown
+}
+
+enum PersonRole {
+  author
+  designer
+  artist
+  illustrator
+  developer
+  graphic_designer
+  sculptor
+  editor
+  writer
+  insert_designer
+}
+
+enum SourceType {
+  book
+  article
+  newspaper
+  interview
+  archive
+  website
+  other
+}
+
+enum MediaType {
+  cover           // Portada / caja
+  board           // Tablero
+  pieces          // Piezas / componentes
+  card            // Cartas
+  rulebook        // Reglamento
+  advertisement   // Aviso publicitario de época
+  other
+}
+
+enum CollectionStatus {
+  owned           // Tengo
+  wishlist        // Quiero
+  played          // Jugué
+  previously_owned // Tuve
+}
+
+enum UserRole {
+  user
+  moderator
+  admin
+}
+
+enum ContentStatus {
+  draft
+  published
+  archived
+}
+
+// ============================================================
+// JUEGOS
+// ============================================================
+
+model Game {
+  id                String        @id @default(uuid())
+  slug              String        @unique
+  title             String
+  alternate_titles  String[]      // Títulos alternativos o en otros idiomas
+
+  // Año de publicación con grado de certeza histórica
+  year_published    Int?
+  year_certainty    YearCertainty @default(exact)
+  year_display      String?       // Texto libre: "circa 1975", "años 80", etc.
+
+  // Jugadores y edad
+  min_players       Int?
+  max_players       Int?
+  min_age           Int?          // Edad mínima recomendada (solo número)
+
+  // Tiempos
+  min_playtime      Int?          // En minutos
+  max_playtime      Int?
+
+  // Descripción e historia
+  description       String?       // Descripción pública del juego
+  historical_context String?      // Contexto histórico del juego
+  research_notes    String?       // Notas internas de investigación (solo admin)
+
+  // Estado histórico
+  status            GameStatus    @default(unknown)
+
+  // Origen
+  origin_country    String?       // País de origen (ej. "Chile", "Chile-Ecuador")
+  origin_type       OriginType?   // Original / Localización / Adaptación
+
+  // Datos BGG
+  bgg_url           String?
+  bgg_weight        Float?        // Peso/complejidad según BGG (1-5)
+
+  // Idiomas
+  original_language String?       // Idioma original del juego
+  other_languages   String[]      // Otros idiomas disponibles
+
+  // Autopublicación
+  is_self_published Boolean       @default(false)
+
+  // Financiamiento y premios
+  funding_source    String?       // Ej. "Fondart", "Kickstarter"
+  awards            String?       // Premios ganados
+
+  // Editorial principal y distribuidor (pueden ser distintos)
+  publisher_id      String?
+  distributor_id    String?
+  publisher         Publisher?    @relation("GamePublisher", fields: [publisher_id], references: [id])
+  distributor       Publisher?    @relation("GameDistributor", fields: [distributor_id], references: [id])
+
+  // Ratings de usuarios
+  avg_rating        Float?
+  rating_count      Int           @default(0)
+
+  // Estado de publicación en la plataforma
+  content_status    ContentStatus @default(draft)
+  is_verified       Boolean       @default(false)  // Verificado por el equipo de investigación
+
+  // Control
+  created_at        DateTime      @default(now())
+  updated_at        DateTime      @updatedAt
+
+  // Relaciones
+  editions          GameEdition[]
+  people            GamePerson[]
+  mechanics         GameMechanic[]
+  categories        GameCategory[]
+  media             MediaAsset[]
+  sources           EntitySource[]
+  reviews           Review[]
+  collection_items  CollectionItem[]
+  forum_threads     ForumThread[]
+  timeline_events   TimelineEvent[]
+
+  @@index([slug])
+  @@index([year_published])
+  @@index([status])
+  @@index([content_status])
+}
+
+// ============================================================
+// EDICIONES
+// Múltiples ediciones de un mismo juego a lo largo del tiempo
+// ============================================================
+
+model GameEdition {
+  id              String    @id @default(uuid())
+  game_id         String
+  game            Game      @relation(fields: [game_id], references: [id])
+
+  edition_name    String?   // Ej. "Edición especial 10 años"
+  year            Int?
+  year_certainty  YearCertainty @default(exact)
+
+  publisher_id    String?
+  publisher       Publisher? @relation(fields: [publisher_id], references: [id])
+
+  // Tiraje
+  first_print_run Int?      // Primer tiraje
+  total_print_run Int?      // Tiraje total acumulado
+  edition_number  Int?      // Número de impresión (1ra, 2da, etc.)
+
+  // Idiomas de esta edición
+  languages       String[]
+
+  notes           String?
+
+  created_at      DateTime  @default(now())
+
+  @@index([game_id])
+}
+
+// ============================================================
+// PERSONAS
+// Autores, diseñadores, ilustradores y otros roles creativos
+// ============================================================
+
+model Person {
+  id              String        @id @default(uuid())
+  slug            String        @unique
+
+  // Nombre
+  first_name      String?
+  last_name       String?
+  nickname        String?       // Apodo
+  display_name    String        // Nombre para mostrar público
+
+  // Datos personales
+  nationality     String?
+  gender          String?       // Dato de investigación interna
+  field_of_study  String?       // Área de estudios / formación
+
+  // Datos históricos
+  birth_year      Int?
+  death_year      Int?
+  is_deceased     Boolean       @default(false)
+
+  // Contenido público
+  biography       String?
+  photo_url       String?
+
+  // Control
+  content_status  ContentStatus @default(draft)
+  created_at      DateTime      @default(now())
+  updated_at      DateTime      @updatedAt
+
+  // Relaciones
+  games           GamePerson[]
+  media           MediaAsset[]
+  sources         EntitySource[]
+  timeline_events TimelineEvent[]
+
+  @@index([slug])
+  @@index([display_name])
+}
+
+// Tabla pivot: Persona ↔ Juego con rol específico
+model GamePerson {
+  id        String     @id @default(uuid())
+  game_id   String
+  person_id String
+  role      PersonRole
+
+  game      Game       @relation(fields: [game_id], references: [id])
+  person    Person     @relation(fields: [person_id], references: [id])
+
+  @@unique([game_id, person_id, role])
+  @@index([game_id])
+  @@index([person_id])
+}
+
+// ============================================================
+// EDITORIALES / PUBLISHERS
+// ============================================================
+
+model Publisher {
+  id                  String          @id @default(uuid())
+  slug                String          @unique
+  name                String
+  nickname            String?         // Nombre coloquial (ej. "Aldebaran")
+  country             String?
+  city                String?
+  website             String?
+
+  // Ciclo de vida histórico
+  founded_year        Int?
+  closed_year         Int?
+  status              PublisherStatus @default(unknown)
+
+  // Historia
+  former_name         String?         // Nombre anterior o fusión
+  historical_notes    String?
+
+  // Uso interno (investigación)
+  was_contacted       Boolean?        // Si el equipo la contactó
+  internal_notes      String?         // Notas internas, no públicas
+
+  // Control
+  content_status      ContentStatus   @default(draft)
+  created_at          DateTime        @default(now())
+  updated_at          DateTime        @updatedAt
+
+  // Relaciones
+  published_games     Game[]          @relation("GamePublisher")
+  distributed_games   Game[]          @relation("GameDistributor")
+  editions            GameEdition[]
+  media               MediaAsset[]
+  sources             EntitySource[]
+  timeline_events     TimelineEvent[]
+
+  @@index([slug])
+}
+
+// ============================================================
+// MECÁNICAS
+// Lista cerrada administrada por el equipo
+// ============================================================
+
+model Mechanic {
+  id          String         @id @default(uuid())
+  slug        String         @unique
+  name        String         @unique
+  description String?
+
+  games       GameMechanic[]
+
+  created_at  DateTime       @default(now())
+}
+
+model GameMechanic {
+  game_id     String
+  mechanic_id String
+
+  game        Game     @relation(fields: [game_id], references: [id])
+  mechanic    Mechanic @relation(fields: [mechanic_id], references: [id])
+
+  @@id([game_id, mechanic_id])
+}
+
+// ============================================================
+// CATEGORÍAS
+// Lista cerrada, separada de mecánicas (temática vs mecanismo)
+// ============================================================
+
+model Category {
+  id          String         @id @default(uuid())
+  slug        String         @unique
+  name        String         @unique
+  description String?
+
+  games       GameCategory[]
+
+  created_at  DateTime       @default(now())
+}
+
+model GameCategory {
+  game_id     String
+  category_id String
+
+  game        Game     @relation(fields: [game_id], references: [id])
+  category    Category @relation(fields: [category_id], references: [id])
+
+  @@id([game_id, category_id])
+}
+
+// ============================================================
+// MEDIOS / GALERÍA DOCUMENTAL
+// Imágenes históricas vinculadas a juegos, personas o editoriales
+// ============================================================
+
+model MediaAsset {
+  id                  String    @id @default(uuid())
+  type                MediaType
+
+  // Relación polimórfica (solo uno de estos estará presente)
+  game_id             String?
+  person_id           String?
+  publisher_id        String?
+
+  game                Game?       @relation(fields: [game_id], references: [id])
+  person              Person?     @relation(fields: [person_id], references: [id])
+  publisher           Publisher?  @relation(fields: [publisher_id], references: [id])
+
+  // Datos del archivo
+  url                 String
+  filename            String?
+  alt_text            String?
+
+  // Contexto histórico
+  circa_year          String?     // Ej. "~1975", "1980s"
+  source_description  String?     // De dónde proviene la imagen
+  copyright_notes     String?     // Notas de derechos de autor
+  is_primary          Boolean     @default(false)  // Imagen principal/portada
+
+  created_at          DateTime    @default(now())
+
+  @@index([game_id])
+  @@index([person_id])
+  @@index([publisher_id])
+}
+
+// ============================================================
+// FUENTES BIBLIOGRÁFICAS
+// Trazabilidad académica — de dónde viene cada dato
+// ============================================================
+
+model Source {
+  id               String     @id @default(uuid())
+  type             SourceType
+  title            String
+  author           String?
+  year             Int?
+  publisher_name   String?    // Editorial del documento (no confundir con Publisher del juego)
+  url              String?
+  page_reference   String?    // Ej. "p. 34", "pp. 120-125"
+  archive_location String?    // Ubicación física del archivo
+
+  entities         EntitySource[]
+
+  created_at       DateTime   @default(now())
+}
+
+// Tabla pivot: Fuente ↔ Entidad (polimórfica)
+model EntitySource {
+  id           String  @id @default(uuid())
+  source_id    String
+
+  // Relación polimórfica
+  game_id      String?
+  person_id    String?
+  publisher_id String?
+
+  notes        String? // Qué dice esta fuente sobre la entidad
+
+  source       Source     @relation(fields: [source_id], references: [id])
+  game         Game?      @relation(fields: [game_id], references: [id])
+  person       Person?    @relation(fields: [person_id], references: [id])
+  publisher    Publisher? @relation(fields: [publisher_id], references: [id])
+
+  @@index([source_id])
+  @@index([game_id])
+  @@index([person_id])
+  @@index([publisher_id])
+}
+
+// ============================================================
+// LÍNEA DE TIEMPO HISTÓRICA
+// Hitos del juego de mesa chileno no necesariamente ligados a un juego
+// ============================================================
+
+model TimelineEvent {
+  id           String   @id @default(uuid())
+  year         Int?
+  year_display String?  // "circa 1985", "años 70", etc.
+  title        String
+  description  String?
+
+  // Referencias opcionales a entidades
+  game_id      String?
+  person_id    String?
+  publisher_id String?
+
+  game         Game?      @relation(fields: [game_id], references: [id])
+  person       Person?    @relation(fields: [person_id], references: [id])
+  publisher    Publisher? @relation(fields: [publisher_id], references: [id])
+
+  content_status ContentStatus @default(draft)
+  created_at   DateTime @default(now())
+
+  @@index([year])
+}
+
+// ============================================================
+// USUARIOS
+// ============================================================
+
+model User {
+  id             String     @id @default(uuid())
+  username       String     @unique
+  email          String     @unique
+  name           String?
+  avatar_url     String?
+  role           UserRole   @default(user)
+  is_banned      Boolean    @default(false)
+  ban_reason     String?
+
+  created_at     DateTime   @default(now())
+  updated_at     DateTime   @updatedAt
+
+  reviews        Review[]
+  collection     CollectionItem[]
+  forum_threads  ForumThread[]
+  forum_posts    ForumPost[]
+  notifications  Notification[]
+  suggestions    GameSuggestion[]
+}
+
+// ============================================================
+// COLECCIONES PERSONALES
+// tengo / quiero / jugué / tuve
+// ============================================================
+
+model CollectionItem {
+  id              String           @id @default(uuid())
+  user_id         String
+  game_id         String
+  status          CollectionStatus
+
+  personal_rating Int?             // Rating personal (1-10)
+  notes           String?
+
+  user            User             @relation(fields: [user_id], references: [id])
+  game            Game             @relation(fields: [game_id], references: [id])
+
+  created_at      DateTime         @default(now())
+  updated_at      DateTime         @updatedAt
+
+  @@unique([user_id, game_id, status])
+  @@index([user_id])
+  @@index([game_id])
+}
+
+// ============================================================
+// RESEÑAS Y PUNTUACIONES
+// ============================================================
+
+model Review {
+  id          String   @id @default(uuid())
+  game_id     String
+  user_id     String
+  rating      Int      // 1-10 como BGG
+  title       String?
+  body        String?
+  is_approved Boolean  @default(false)  // Moderación previa
+
+  game        Game     @relation(fields: [game_id], references: [id])
+  user        User     @relation(fields: [user_id], references: [id])
+
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+
+  @@unique([game_id, user_id])
+  @@index([game_id])
+  @@index([user_id])
+  @@index([is_approved])
+}
+
+// ============================================================
+// FOROS
+// ============================================================
+
+model ForumThread {
+  id         String      @id @default(uuid())
+  game_id    String
+  user_id    String
+  title      String
+  is_locked  Boolean     @default(false)
+  is_pinned  Boolean     @default(false)
+
+  game       Game        @relation(fields: [game_id], references: [id])
+  user       User        @relation(fields: [user_id], references: [id])
+  posts      ForumPost[]
+
+  created_at DateTime    @default(now())
+  updated_at DateTime    @updatedAt
+
+  @@index([game_id])
+}
+
+model ForumPost {
+  id         String      @id @default(uuid())
+  thread_id  String
+  user_id    String
+  body       String
+  is_deleted Boolean     @default(false)
+
+  thread     ForumThread @relation(fields: [thread_id], references: [id])
+  user       User        @relation(fields: [user_id], references: [id])
+
+  created_at DateTime    @default(now())
+  updated_at DateTime    @updatedAt
+
+  @@index([thread_id])
+}
+
+// ============================================================
+// NOTIFICACIONES
+// Sistema interno — sin emails, solo badge en UI
+// ============================================================
+
+model Notification {
+  id         String   @id @default(uuid())
+  user_id    String
+  type       String   // "review_reply", "forum_reply", "suggestion_approved", etc.
+  title      String
+  body       String?
+  url        String?  // Link al contenido relacionado
+  is_read    Boolean  @default(false)
+
+  user       User     @relation(fields: [user_id], references: [id])
+
+  created_at DateTime @default(now())
+
+  @@index([user_id, is_read])
+}
+
+// ============================================================
+// SUGERENCIAS DE JUEGOS POR USUARIOS
+// Flujo: usuario sugiere → admin revisa → aprueba o rechaza
+// ============================================================
+
+model GameSuggestion {
+  id              String   @id @default(uuid())
+  user_id         String?
+  submitter_name  String?
+  submitter_email String?
+
+  title           String
+  description     String?
+  year            Int?
+  publisher_name  String?
+  author_name     String?
+  bgg_url         String?
+  notes           String?  // Notas del usuario
+
+  // Estado de revisión
+  is_reviewed     Boolean  @default(false)
+  is_approved     Boolean  @default(false)
+  reviewer_notes  String?  // Feedback del admin al usuario
+
+  // Si fue aprobado, referencia al juego creado
+  game_id         String?
+
+  user            User?    @relation(fields: [user_id], references: [id])
+
+  created_at      DateTime @default(now())
+  updated_at      DateTime @updatedAt
+
+  @@index([is_reviewed, is_approved])
+}

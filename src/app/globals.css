@@ -1,0 +1,238 @@
+@import "tailwindcss";
+
+/* ============================================
+   LUDOTECA CHILENA — Design Tokens
+   Extraídos del logo oficial (mayo 2026)
+   ============================================ */
+
+:root {
+  /* Colores de marca */
+  --color-brand-blue: #1e1ea5;
+  --color-brand-blue-dark: #15158a;
+  --color-brand-blue-mid: #2d2db4;
+  --color-brand-blue-light: #6969c3;
+  --color-brand-blue-pale: #e8e8f8;
+
+  --color-brand-red: #d20000;
+  --color-brand-red-dark: #a80000;
+  --color-brand-red-light: #ff3333;
+
+  /* Neutros */
+  --color-white: #ffffff;
+  --color-cream: #f5f5ff;
+  --color-text: #1e1e3a;
+  --color-text-secondary: #444455;
+  --color-text-muted: #8888aa;
+  --color-border: #d2d2f0;
+
+  /* Semánticos */
+  --color-primary: var(--color-brand-blue);
+  --color-primary-hover: var(--color-brand-blue-dark);
+  --color-accent: var(--color-brand-red);
+  --color-accent-hover: var(--color-brand-red-dark);
+  --color-bg: var(--color-cream);
+  --color-bg-card: var(--color-white);
+  --color-bg-nav: var(--color-brand-blue);
+
+  /* Tipografía */
+  --font-heading: var(--font-fredoka), 'Fredoka', sans-serif;
+  --font-body: var(--font-inter), 'Inter', sans-serif;
+
+  /* Sombras */
+  --shadow-card: 0 2px 8px rgba(30, 30, 165, 0.08);
+  --shadow-card-hover: 0 8px 24px rgba(30, 30, 165, 0.15);
+  --shadow-nav: 0 2px 12px rgba(30, 30, 165, 0.2);
+}
+
+@theme inline {
+  --color-background: var(--color-bg);
+  --color-foreground: var(--color-text);
+  --color-brand-blue: var(--color-brand-blue);
+  --color-brand-blue-dark: var(--color-brand-blue-dark);
+  --color-brand-blue-mid: var(--color-brand-blue-mid);
+  --color-brand-blue-light: var(--color-brand-blue-light);
+  --color-brand-blue-pale: var(--color-brand-blue-pale);
+  --color-brand-red: var(--color-brand-red);
+  --color-brand-red-dark: var(--color-brand-red-dark);
+  --color-brand-red-light: var(--color-brand-red-light);
+  --color-white: var(--color-white);
+  --color-cream: var(--color-cream);
+  --color-text-primary: var(--color-text);
+  --color-text-secondary: var(--color-text-secondary);
+  --color-text-muted: var(--color-text-muted);
+  --color-border: var(--color-border);
+  --font-heading: var(--font-heading);
+  --font-body: var(--font-body);
+}
+
+/* ============================================
+   BASE STYLES
+   ============================================ */
+
+body {
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: var(--font-body);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-heading);
+  color: var(--color-brand-blue);
+  line-height: 1.2;
+}
+
+a {
+  color: var(--color-brand-blue);
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+a:hover {
+  color: var(--color-brand-red);
+}
+
+/* ============================================
+   ANIMATIONS
+   ============================================ */
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes countUp {
+  from { opacity: 0; transform: scale(0.5); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes starPulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.15); }
+}
+
+.animate-fade-in-up {
+  animation: fadeInUp 0.6s ease-out forwards;
+}
+
+.animate-slide-down {
+  animation: slideDown 0.3s ease-out forwards;
+}
+
+.animate-count-up {
+  animation: countUp 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+.animate-star-pulse {
+  animation: starPulse 2s ease-in-out infinite;
+}
+
+/* Stagger delays for lists */
+.stagger-1 { animation-delay: 0.1s; }
+.stagger-2 { animation-delay: 0.2s; }
+.stagger-3 { animation-delay: 0.3s; }
+.stagger-4 { animation-delay: 0.4s; }
+.stagger-5 { animation-delay: 0.5s; }
+
+/* ============================================
+   COMPONENT CLASSES
+   ============================================ */
+
+.card-hover {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.card-hover:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-card-hover);
+}
+
+.nav-link {
+  position: relative;
+  transition: color 0.2s ease;
+}
+
+.nav-link::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 0;
+  width: 0;
+  height: 2px;
+  background: var(--color-brand-red);
+  transition: width 0.3s ease;
+}
+
+.nav-link:hover::after,
+.nav-link.active::after {
+  width: 100%;
+}
+
+/* Tag styles */
+.tag-mechanic {
+  background: var(--color-brand-blue-pale);
+  color: var(--color-brand-blue);
+  padding: 0.25rem 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  transition: background 0.2s;
+}
+
+.tag-mechanic:hover {
+  background: var(--color-brand-blue-light);
+  color: white;
+}
+
+.tag-category {
+  background: #fff0f0;
+  color: var(--color-brand-red-dark);
+  padding: 0.25rem 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  transition: background 0.2s;
+}
+
+.tag-category:hover {
+  background: var(--color-brand-red);
+  color: white;
+}
+
+/* ============================================
+   RICH TEXT (TipTap output)
+   ============================================ */
+
+.prose-ludoteca h1 { font-size: 2rem; margin-bottom: 1rem; }
+.prose-ludoteca h2 { font-size: 1.5rem; margin-bottom: 0.75rem; margin-top: 1.5rem; }
+.prose-ludoteca h3 { font-size: 1.25rem; margin-bottom: 0.5rem; margin-top: 1.25rem; }
+.prose-ludoteca p { margin-bottom: 1rem; line-height: 1.75; color: var(--color-text-secondary); }
+.prose-ludoteca ul, .prose-ludoteca ol { margin-bottom: 1rem; padding-left: 1.5rem; }
+.prose-ludoteca li { margin-bottom: 0.25rem; line-height: 1.75; }
+.prose-ludoteca a { color: var(--color-brand-blue); text-decoration: underline; }
+.prose-ludoteca a:hover { color: var(--color-brand-red); }
+.prose-ludoteca img { border-radius: 0.5rem; margin: 1rem 0; }
+.prose-ludoteca blockquote {
+  border-left: 4px solid var(--color-brand-blue-pale);
+  padding-left: 1rem;
+  color: var(--color-text-muted);
+  font-style: italic;
+}
