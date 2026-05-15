@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import GameTabs from "@/components/game/GameTabs";
+import ShareButton from "@/components/game/ShareButton";
 
 interface PageProps {
   params: Promise<{ slug: string }>;
@@ -197,6 +198,11 @@ export default async function GameDetailPage({ params }: PageProps) {
 
           {/* Right column — Header details (BGG-style) */}
           <div className="lg:col-span-2 flex flex-col">
+            {/* Utility row — share button */}
+            <div className="flex justify-end -mt-1 mb-2">
+              <ShareButton title={game.title} path={`/juegos/${game.slug}`} />
+            </div>
+
             {/* Top meta row: origin + awards + funding */}
             {(game.origin_type || game.awards || game.funding_source) && (
               <div

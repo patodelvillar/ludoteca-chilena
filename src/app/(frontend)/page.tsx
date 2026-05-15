@@ -3,6 +3,9 @@ import { GameCard } from "@/components/game/GameCard";
 import { StatCard } from "@/components/ui/StatCard";
 import { prisma } from "@/lib/prisma";
 
+// Página dinámica — los juegos destacados son aleatorios en cada request
+export const dynamic = "force-dynamic";
+
 // Icons for stats
 function DiceIcon() {
   return (
@@ -44,17 +47,28 @@ export default async function HomePage() {
     prisma.person.count(),
   ]);
 
-  const featuredGames = await prisma.game.findMany({
-    take: 6,
-    where: { content_status: "published" },
+  // Selección aleatoria: 1ª query trae los IDs ordenados al azar (barata),
+  // 2ª query trae los 6 con relaciones incluidas.
+  const randomIds = await prisma.$queryRaw<{ id: string }[]>`
+    SELECT id FROM "Game"
+    WHERE content_status = 'published'
+    ORDER BY RANDOM()
+    LIMIT 6
+  `;
+  const ids = randomIds.map((r) => r.id);
+  const fetched = await prisma.game.findMany({
+    where: { id: { in: ids } },
     include: {
       publisher: true,
       mechanics: { include: { mechanic: true } },
       categories: { include: { category: true } },
       media: { where: { is_primary: true }, take: 1 },
     },
-    orderBy: { year_published: "desc" },
   });
+  // Preservar el orden aleatorio (Prisma devuelve en orden de DB)
+  const featuredGames = ids
+    .map((id) => fetched.find((g) => g.id === id))
+    .filter((g): g is (typeof fetched)[number] => Boolean(g));
 
   return (
     <div>
