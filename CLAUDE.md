@@ -359,6 +359,40 @@ R2_PUBLIC_URL="https://..."
 
 ---
 
+## ⚠️ Levantar el dev server sin colgar el computador
+
+Next.js 16 usa **Turbopack por defecto en `next dev`**, que consume 2-4 GB de RAM. Si quedan procesos huérfanos en el puerto 3000 o se levantan varias instancias en paralelo, el consumo se multiplica y puede colgar el sistema (ya pasó en este proyecto y en `b2b-Pudu-Juegos`).
+
+**⚠️ PROHIBIDO:**
+- Levantar `npm run dev` sin matar antes lo que esté corriendo en el puerto 3000
+- Dejar varios `next dev` corriendo en paralelo sobre el mismo repo desde distintas terminales
+
+**✅ FORMA CORRECTA:**
+
+```bash
+# Paso 0: SIEMPRE matar lo que esté en el puerto 3000 antes de levantar
+lsof -ti:3000 | xargs -r kill -9 2>/dev/null
+
+# Opción A — Solo quieres probar que funciona (RAM ~100 MB, sin Turbopack)
+npm run build      # compila una vez
+npm start          # sirve el build compilado
+
+# Opción B — Necesitas hot-reload para editar código (RAM 2-4 GB)
+npm run dev        # una sola instancia, cerrar con Ctrl+C al terminar
+```
+
+**📊 Comparativa de consumo:**
+
+| Escenario | RAM |
+|---|---|
+| ❌ Varios `next dev` huérfanos en el mismo puerto | 6-12+ GB (crash) |
+| ✅ `next start` con build existente | ~100 MB |
+| ✅ `next dev` único | 2-4 GB |
+
+**💡 Regla mnemotécnica:** ¿Editar código con hot-reload? → `npm run dev`. ¿Solo verificar que funciona? → `npm run build && npm start`.
+
+---
+
 ## Comandos útiles
 
 ```bash

@@ -1,36 +1,106 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Ludoteca Chilena
 
-## Getting Started
+Plataforma web de **archivo histórico digital** dedicada a los juegos de mesa chilenos. Nace de una investigación académica con el objetivo de preservar, organizar y difundir el patrimonio lúdico nacional.
 
-First, run the development server:
+A diferencia de un catálogo, este es un **archivo relacional profundo**: cada juego, persona, editorial y mecánica están interconectados con trazabilidad académica, galería documental histórica y fuentes bibliográficas citables. La referencia de inspiración es [BoardGameGeek](https://boardgamegeek.com), orientada al contexto histórico y cultural chileno.
+
+Sitio en producción: [ludotecachilena.cl](https://ludotecachilena.cl)
+
+---
+
+## Stack
+
+| Capa | Tecnología |
+|------|-----------|
+| Framework | Next.js 16 (App Router) |
+| Lenguaje | TypeScript |
+| Base de datos | PostgreSQL (Neon serverless) |
+| ORM | Prisma 7.8 + `@prisma/adapter-neon` |
+| Autenticación | NextAuth.js |
+| Editor rich text | TipTap |
+| Almacenamiento de imágenes | Cloudflare R2 |
+| Estilos | Tailwind CSS 4 |
+| Despliegue | Vercel + Neon |
+
+## Estructura del archivo
+
+- **Juegos** — fichas estilo BGG con descripción, galería histórica, videos embebidos (YouTube/Vimeo/TikTok/Instagram), reglamentos PDF, ediciones y fuentes bibliográficas
+- **Personas** — autores, diseñadores, artistas e ilustradores con sus roles por juego
+- **Editoriales** — historia, fundación, estado, juegos publicados
+- **Mecánicas y categorías** — lista cerrada administrada desde el panel
+- **Línea de tiempo** — recorrido por décadas con hitos históricos intercalados
+- **Fuentes** — trazabilidad académica de cada dato
+
+131 juegos chilenos documentados, 164 personas, 54 editoriales.
+
+## Comandos
 
 ```bash
+# Instalar
+npm install
+
+# Desarrollo (con hot-reload, ~2-4 GB RAM, usa Turbopack)
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+
+# Build de producción
+npm run build
+
+# Servir build (sin Turbopack, ~100 MB RAM — recomendado para probar la app)
+npm start
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+> ⚠️ Antes de levantar el dev server, matar cualquier instancia previa para evitar consumo acumulado de RAM:
+> ```bash
+> lsof -ti:3000 | xargs -r kill -9 2>/dev/null
+> ```
+> Detalles completos en `CLAUDE.md`.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### Base de datos
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+# Generar cliente Prisma
+npx prisma generate
 
-## Learn More
+# Aplicar migraciones
+npx prisma migrate dev
 
-To learn more about Next.js, take a look at the following resources:
+# Inspeccionar datos en GUI
+npx prisma studio
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Configuración
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Crear `.env` en la raíz con:
 
-## Deploy on Vercel
+```env
+DATABASE_URL="postgresql://..."
+NEXTAUTH_URL="http://localhost:3000"
+NEXTAUTH_SECRET="..."
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+R2_ACCOUNT_ID="..."
+R2_ACCESS_KEY_ID="..."
+R2_SECRET_ACCESS_KEY="..."
+R2_BUCKET_NAME="ludoteca-chilena"
+R2_PUBLIC_URL="https://..."
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+BGG_BEARER_TOKEN="..."   # para sincronizar metadata desde BoardGameGeek
+```
+
+## Documentación interna
+
+- **`CLAUDE.md`** — contexto completo del proyecto, sistema de diseño, modelo de datos, convenciones de código y prioridades de desarrollo.
+- **`prisma/schema.prisma`** — modelo de datos canónico.
+
+## Estado del proyecto
+
+| Fase | Estado |
+|------|--------|
+| Fundaciones (Next.js, Prisma, Neon, importación de datos, R2) | ✅ Completa |
+| Sitio público (catálogo, fichas, historia, SEO) | 🚧 En curso |
+| Panel de administración | ⏳ Pendiente |
+| Comunidad (usuarios, reseñas, foros, colecciones) | ⏳ Pendiente |
+
+## Créditos
+
+Investigación y curatoría: equipo Ludoteca Chilena.
+Desarrollo: [Anatida.tech](https://anatida.tech).

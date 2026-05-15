@@ -74,6 +74,14 @@ enum MediaType {
   other
 }
 
+enum VideoPlatform {
+  youtube
+  vimeo
+  tiktok
+  instagram
+  other
+}
+
 enum CollectionStatus {
   owned           // Tengo
   wishlist        // Quiero
@@ -168,6 +176,7 @@ model Game {
   mechanics         GameMechanic[]
   categories        GameCategory[]
   media             MediaAsset[]
+  videos            GameVideo[]
   sources           EntitySource[]
   reviews           Review[]
   collection_items  CollectionItem[]
@@ -399,6 +408,30 @@ model MediaAsset {
   @@index([game_id])
   @@index([person_id])
   @@index([publisher_id])
+}
+
+// ============================================================
+// VIDEOS EMBEBIDOS
+// Solo URL — el video lo hostea YouTube/Vimeo/TikTok/Instagram
+// ============================================================
+
+model GameVideo {
+  id          String        @id @default(uuid())
+  game_id     String
+  game        Game          @relation(fields: [game_id], references: [id], onDelete: Cascade)
+
+  url         String        // URL original pegada por el admin
+  platform    VideoPlatform
+  video_id    String?       // ID extraído (ej. "dQw4w9WgXcQ" para YouTube)
+
+  title       String?
+  description String?
+  thumbnail   String?       // URL del thumbnail (auto-detectada o manual)
+
+  created_at  DateTime      @default(now())
+  updated_at  DateTime      @updatedAt
+
+  @@index([game_id])
 }
 
 // ============================================================

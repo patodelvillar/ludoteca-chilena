@@ -124,8 +124,8 @@ export function Footer() {
             </p>
             <Link
               href="/sugerir"
-              className="inline-flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium transition-all hover:scale-105"
-              style={{ background: "var(--color-brand-red)", color: "white" }}
+              className="inline-flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium transition-all hover:scale-105 hover:shadow-md"
+              style={{ background: "white", color: "var(--color-brand-blue)" }}
             >
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <path d="M12 5v14M5 12h14" />

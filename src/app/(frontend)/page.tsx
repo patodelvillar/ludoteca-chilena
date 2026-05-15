@@ -123,7 +123,7 @@ export default async function HomePage() {
             <Link
               href="/juegos"
               className="inline-flex items-center justify-center gap-2 rounded-xl px-8 py-4 text-base font-semibold transition-all hover:scale-105 hover:shadow-lg"
-              style={{ background: "var(--color-brand-red)", color: "white" }}
+              style={{ background: "white", color: "var(--color-brand-blue)" }}
             >
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <circle cx="11" cy="11" r="8" />
@@ -341,8 +341,8 @@ export default async function HomePage() {
             </p>
             <Link
               href="/sugerir"
-              className="inline-flex items-center gap-2 rounded-xl px-8 py-4 text-base font-semibold text-white transition-all hover:scale-105 relative"
-              style={{ background: "var(--color-brand-red)" }}
+              className="inline-flex items-center gap-2 rounded-xl px-8 py-4 text-base font-semibold transition-all hover:scale-105 hover:shadow-lg relative"
+              style={{ background: "white", color: "var(--color-brand-blue)" }}
             >
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <path d="M12 5v14M5 12h14" />
