@@ -292,6 +292,7 @@ model Publisher {
   country             String?
   city                String?
   website             String?
+  bgg_url             String?         // Página de la editorial en BoardGameGeek
 
   // Ciclo de vida histórico
   founded_year        Int?
