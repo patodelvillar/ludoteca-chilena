@@ -178,6 +178,17 @@ a:hover {
   50% { transform: scale(1.15); }
 }
 
+/* Hero cover cycle — 4 covers, each visible ~5s with fade */
+@keyframes coverCycle {
+  0%, 25% { opacity: 0; }
+  3%, 22% { opacity: 0.35; }
+  28%, 100% { opacity: 0; }
+}
+.cover-cycle-0 { animation: coverCycle 24s ease-in-out infinite; }
+.cover-cycle-1 { animation: coverCycle 24s ease-in-out infinite -6s; }
+.cover-cycle-2 { animation: coverCycle 24s ease-in-out infinite -12s; }
+.cover-cycle-3 { animation: coverCycle 24s ease-in-out infinite -18s; }
+
 .animate-fade-in-up {
   animation: fadeInUp 0.6s ease-out forwards;
 }

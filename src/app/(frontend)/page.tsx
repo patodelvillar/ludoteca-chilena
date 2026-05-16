@@ -70,6 +70,37 @@ export default async function HomePage() {
     .map((id) => fetched.find((g) => g.id === id))
     .filter((g): g is (typeof fetched)[number] => Boolean(g));
 
+  // 4 covers aleatorios para el hero (ciclan con animación CSS)
+  const heroCovers = await prisma.$queryRaw<{ url: string }[]>`
+    SELECT m.url
+    FROM "MediaAsset" m
+    JOIN "Game" g ON m.game_id = g.id
+    WHERE m.is_primary = true
+      AND g.content_status = 'published'
+      AND m.url LIKE 'https://pub-%'
+    ORDER BY RANDOM()
+    LIMIT 4
+  `;
+
+  // Hitos destacados de la línea de tiempo
+  const timelineEvents = await prisma.timelineEvent.findMany({
+    where: { content_status: "published", year: { not: null } },
+    orderBy: { year: "asc" },
+    take: 6,
+    include: {
+      game: { select: { slug: true, title: true } },
+      publisher: { select: { slug: true, name: true } },
+      person: { select: { slug: true, display_name: true } },
+    },
+  });
+
+  function timelineHref(e: (typeof timelineEvents)[number]): string {
+    if (e.game) return `/juegos/${e.game.slug}`;
+    if (e.publisher) return `/editoriales/${e.publisher.slug}`;
+    if (e.person) return `/personas/${e.person.slug}`;
+    return "/historia";
+  }
+
   return (
     <div>
       {/* Hero Section */}
@@ -77,6 +108,30 @@ export default async function HomePage() {
         className="relative overflow-hidden py-20 sm:py-28 lg:py-36"
         style={{ background: "var(--color-brand-blue)" }}
       >
+        {/* Rotating covers background */}
+        <div className="absolute inset-0 overflow-hidden" aria-hidden>
+          {heroCovers.map((c, i) => (
+            <div
+              key={c.url}
+              className={`absolute inset-0 cover-cycle-${i}`}
+              style={{
+                backgroundImage: `url(${c.url})`,
+                backgroundSize: "cover",
+                backgroundPosition: "center",
+                filter: "blur(8px)",
+              }}
+            />
+          ))}
+          {/* Overlay azul para legibilidad */}
+          <div
+            className="absolute inset-0"
+            style={{
+              background:
+                "linear-gradient(to bottom, color-mix(in srgb, var(--color-brand-blue) 85%, transparent), color-mix(in srgb, var(--color-brand-blue) 95%, transparent))",
+            }}
+          />
+        </div>
+
         {/* Decorative background elements */}
         <div className="absolute inset-0 overflow-hidden">
           <div
@@ -261,6 +316,139 @@ export default async function HomePage() {
           </div>
         </div>
       </section>
+
+      {/* Timeline Preview Section */}
+      {timelineEvents.length > 0 && (
+        <section
+          className="py-16 sm:py-20"
+          style={{ background: "var(--color-brand-blue-pale)" }}
+        >
+          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+            <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-10">
+              <div>
+                <p
+                  className="text-xs sm:text-sm uppercase tracking-[0.2em] font-semibold mb-2"
+                  style={{ color: "var(--color-brand-red)" }}
+                >
+                  Archivo histórico
+                </p>
+                <h2
+                  className="text-3xl sm:text-4xl font-bold mb-2"
+                  style={{
+                    fontFamily: "var(--font-heading)",
+                    color: "var(--color-brand-blue)",
+                  }}
+                >
+                  Hitos del juego de mesa chileno
+                </h2>
+                <p
+                  className="text-base sm:text-lg max-w-2xl"
+                  style={{ color: "var(--color-text-secondary)" }}
+                >
+                  Algunos momentos clave en la historia del archivo. Recorre la línea de tiempo completa para más contexto y publicaciones.
+                </p>
+              </div>
+              <Link
+                href="/historia"
+                className="hidden sm:inline-flex items-center gap-2 rounded-xl px-6 py-2.5 text-sm font-semibold transition-all hover:scale-105 whitespace-nowrap"
+                style={{
+                  background: "var(--color-brand-blue)",
+                  color: "white",
+                }}
+              >
+                Línea de tiempo
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                >
+                  <path d="M5 12h14M12 5l7 7-7 7" />
+                </svg>
+              </Link>
+            </div>
+
+            <ol className="relative grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+              {timelineEvents.map((e) => (
+                <li key={e.id}>
+                  <Link
+                    href={timelineHref(e)}
+                    className="block h-full p-5 rounded-2xl border-l-4 transition-all hover:shadow-md hover:-translate-y-0.5"
+                    style={{
+                      background: "var(--color-white)",
+                      borderColor: "var(--color-brand-red)",
+                      borderRightColor: "var(--color-border)",
+                      borderTopColor: "var(--color-border)",
+                      borderBottomColor: "var(--color-border)",
+                      borderWidth: "1px",
+                      borderLeftWidth: "4px",
+                      borderStyle: "solid",
+                    }}
+                  >
+                    <div className="flex items-baseline gap-3 mb-2">
+                      <span
+                        className="text-2xl font-bold leading-none"
+                        style={{
+                          fontFamily: "var(--font-heading)",
+                          color: "var(--color-brand-blue)",
+                        }}
+                      >
+                        {e.year}
+                      </span>
+                      <span
+                        className="text-xs uppercase tracking-wider font-semibold"
+                        style={{ color: "var(--color-brand-red)" }}
+                      >
+                        Hito
+                      </span>
+                    </div>
+                    <h3
+                      className="text-base font-bold mb-2 leading-tight"
+                      style={{
+                        fontFamily: "var(--font-heading)",
+                        color: "var(--color-brand-blue)",
+                      }}
+                    >
+                      {e.title}
+                    </h3>
+                    {e.description && (
+                      <p
+                        className="text-sm leading-relaxed line-clamp-3"
+                        style={{ color: "var(--color-text-secondary)" }}
+                      >
+                        {e.description}
+                      </p>
+                    )}
+                    {(e.game || e.publisher || e.person) && (
+                      <p
+                        className="text-xs mt-3 font-semibold"
+                        style={{ color: "var(--color-brand-red)" }}
+                      >
+                        →{" "}
+                        {e.game?.title ||
+                          e.publisher?.name ||
+                          e.person?.display_name}
+                      </p>
+                    )}
+                  </Link>
+                </li>
+              ))}
+            </ol>
+
+            <div className="mt-8 text-center sm:hidden">
+              <Link
+                href="/historia"
+                className="inline-flex items-center gap-2 rounded-xl px-8 py-3 text-sm font-semibold text-white"
+                style={{ background: "var(--color-brand-blue)" }}
+              >
+                Ver línea de tiempo completa
+              </Link>
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* Featured Games Section */}
       <section
