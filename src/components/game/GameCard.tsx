@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { safeExternalUrl, trustedMediaHosts } from "@/lib/url";
 
 interface GameCardProps {
   slug: string;
@@ -37,6 +38,7 @@ export function GameCard({
 }: GameCardProps) {
   const yearText = formatYear(year, yearCertainty);
   const publisher = isSelfPublished ? "Autopublicado" : publisherName;
+  const safeImageUrl = safeExternalUrl(imageUrl, { allowedHosts: trustedMediaHosts });
 
   return (
     <Link href={`/juegos/${slug}`} className="block group">
@@ -53,9 +55,9 @@ export function GameCard({
           className="relative h-48 overflow-hidden"
           style={{ background: "var(--color-brand-blue-pale)" }}
         >
-          {imageUrl ? (
+          {safeImageUrl ? (
             <img
-              src={imageUrl}
+              src={safeImageUrl}
               alt={title}
               className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
             />

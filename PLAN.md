@@ -101,16 +101,26 @@ src/app/api/
 ```
 
 **Tareas concretas**
-- [ ] Crear modelo `User` con `role` (admin/editor) y hash de password
-- [ ] Setup NextAuth con `CredentialsProvider`
-- [ ] Middleware de protección en `/admin/*` y APIs sensibles
-- [ ] Layout admin con sidebar (mecánicas, categorías, juegos, editoriales, personas, timeline, sugerencias)
-- [ ] CRUD Juegos con formulario completo + TipTap para descripción
-- [ ] Upload de imágenes a R2 con preview
-- [ ] CRUD Editoriales y Personas
-- [ ] **CRUD TimelineEvent** (urgente: la página `/historia` está lista para mostrar hitos pero la BD aún no tiene ninguno)
-- [ ] CRUD GameVideo (pegar URL → `parseVideoUrl()` → guardar registro)
-- [ ] Pantalla de moderación de sugerencias
+- [x] Crear modelo `User` con `role` (admin/editor) y hash de password
+- [x] Setup NextAuth con `CredentialsProvider`
+- [x] Middleware/proxy de protección en `/admin/*` y APIs sensibles
+- [x] Layout admin con sidebar (mecánicas, categorías, juegos, editoriales, personas, timeline, sugerencias)
+- [ ] **Siguiente prioridad: moderación real de sugerencias**
+  - [x] Botones aprobar / rechazar / marcar revisada
+  - [x] Guardar `reviewer_notes`
+  - [x] Al aprobar, crear `Game` en borrador desde la sugerencia
+- [x] **Luego: CRUD TimelineEvent** para crear/editar/publicar hitos históricos
+- [x] **Después: CRUD mínimo de juegos** (campos principales, estado editorial, descripción)
+- [x] **Finalmente: Upload a R2** integrado al CRUD de juegos/personas/editoriales
+- [x] CRUD mínimo de Juegos con formulario de campos principales
+- [x] Upload de portada de juego a R2 con preview
+- [x] Upload de imágenes a galería de juegos en R2 (`MediaAsset` no primario: tablero, piezas, cartas, reglamento, publicidad, otro)
+- [x] Upload de foto principal para Personas y logo principal para Editoriales en R2
+- [x] CRUD Juegos avanzado con relaciones + TipTap para descripción (mecánicas/categorías/personas con rol)
+- [x] CRUD mínimo Editoriales y Personas (crear/editar/publicar/archivar; sin borrado físico para proteger relaciones)
+- [x] **CRUD TimelineEvent** (urgente: la página `/historia` está lista para mostrar hitos pero la BD aún no tiene ninguno)
+- [x] CRUD GameVideo (pegar URL → `parseVideoUrl()` → guardar registro; borrar videos desde el editor del juego)
+- [x] Pantalla inicial de moderación de sugerencias (listado; aprobar/rechazar queda pendiente)
 
 **Dependencias por instalar**
 ```bash
@@ -139,6 +149,8 @@ npm install -D @types/bcryptjs
 - [ ] Structured data (schema.org) en fichas
 - [ ] Accesibilidad (audit ARIA, contraste)
 - [ ] Documentación del admin para investigadores
+- [ ] Retirar dependencia `xlsx` antes del cierre del desarrollo si la importación Excel ya no forma parte del código activo. El archivo Excel bruto está fuera del repo; esta tarea apunta al paquete npm, que hoy aparece en `npm audit` con vulnerabilidades sin fix disponible.
+- [ ] Endurecer `/sugerir` para producción con **Cloudflare Turnstile** + rate limit persistente en **Neon/Postgres**. No usar Vercel KV: el producto fue descontinuado.
 
 ---
 
@@ -156,6 +168,8 @@ Cosas pequeñas que aún se pueden afinar (no bloquean Fase 3):
 ---
 
 ## Scripts disponibles (`scripts/` — gitignored)
+
+> Nota: los scripts y archivos Excel de importación son herramientas locales y no van al repo. Al terminar el desarrollo, revisar si `xlsx` sigue siendo necesario como dependencia npm; si no, removerlo del proyecto.
 
 | Script | Uso |
 |--------|-----|

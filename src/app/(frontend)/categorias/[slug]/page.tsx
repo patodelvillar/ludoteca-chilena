@@ -18,6 +18,9 @@ export default async function CategoryDetailPage({ params }: PageProps) {
     where: { slug },
     include: {
       games: {
+        where: {
+          game: { content_status: "published" },
+        },
         include: {
           game: {
             include: {
@@ -34,7 +37,7 @@ export default async function CategoryDetailPage({ params }: PageProps) {
 
   if (!category) notFound();
 
-  const games = category.games.map(g => g.game).sort((a, b) => a.title.localeCompare(b.title));
+  const games = category.games.map((g) => g.game).sort((a, b) => a.title.localeCompare(b.title));
 
   return (
     <div className="py-10 sm:py-14">

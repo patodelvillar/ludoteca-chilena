@@ -90,7 +90,7 @@ export function GameCatalog({ initialGames }: GameCatalogProps) {
       {/* Results indicator */}
       {searchTerm && (
         <div className="mb-6 text-sm font-medium" style={{ color: "var(--color-text-secondary)" }}>
-          Mostrando {filteredGames.length} {filteredGames.length === 1 ? "resultado" : "resultados"} para "{searchTerm}"
+          Mostrando {filteredGames.length} {filteredGames.length === 1 ? "resultado" : "resultados"} para &ldquo;{searchTerm}&rdquo;
         </div>
       )}
 
@@ -102,12 +102,12 @@ export function GameCatalog({ initialGames }: GameCatalogProps) {
             slug={game.slug}
             title={game.title}
             year={game.year_published}
-            yearCertainty={game.year_certainty as any}
+            yearCertainty={game.year_certainty}
             publisherName={game.publisher?.name}
             isSelfPublished={game.is_self_published}
             mechanics={game.mechanics}
             categories={game.categories}
-            status={game.status as any}
+            status={game.status}
             imageUrl={game.imageUrl}
           />
         ))}

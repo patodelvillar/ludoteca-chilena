@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { GameCard } from "@/components/game/GameCard";
+import { safeExternalUrl, trustedMediaHosts } from "@/lib/url";
 
 interface PageProps {
   params: Promise<{ slug: string }>;
@@ -10,8 +11,12 @@ interface PageProps {
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { slug } = await params;
-  const person = await prisma.person.findUnique({
-    where: { slug },
+  const person = await prisma.person.findFirst({
+    where: {
+      slug,
+      content_status: "published",
+      games: { some: { game: { content_status: "published" } } },
+    },
   });
   if (!person) return { title: "Persona no encontrada" };
 
@@ -37,8 +42,12 @@ const roleMap: Record<string, string> = {
 export default async function PersonDetailPage({ params }: PageProps) {
   const { slug } = await params;
 
-  const person = await prisma.person.findUnique({
-    where: { slug },
+  const person = await prisma.person.findFirst({
+    where: {
+      slug,
+      content_status: "published",
+      games: { some: { game: { content_status: "published" } } },
+    },
     include: {
       games: {
         include: {
@@ -52,7 +61,9 @@ export default async function PersonDetailPage({ params }: PageProps) {
           }
         }
       },
-      media: true,
+      media: {
+        orderBy: [{ is_primary: "desc" }, { created_at: "desc" }],
+      },
     },
   });
 
@@ -60,7 +71,8 @@ export default async function PersonDetailPage({ params }: PageProps) {
 
   // Filtrar solo juegos publicados y deduplicar por si tiene más de un rol en el mismo juego
   const publishedGames = person.games.filter(g => g.game.content_status === "published");
-  const uniqueGamesMap = new Map();
+  type UniqueGame = (typeof publishedGames)[number]["game"] & { personRoles: string[] };
+  const uniqueGamesMap = new Map<string, UniqueGame>();
   
   publishedGames.forEach(g => {
     if (!uniqueGamesMap.has(g.game.id)) {
@@ -70,13 +82,15 @@ export default async function PersonDetailPage({ params }: PageProps) {
       });
     } else {
       const existing = uniqueGamesMap.get(g.game.id);
-      existing.personRoles.push(roleMap[g.role] || g.role);
+      existing?.personRoles.push(roleMap[g.role] || g.role);
     }
   });
 
   const uniqueGames = Array.from(uniqueGamesMap.values());
   const allRoles = Array.from(new Set(publishedGames.map(g => roleMap[g.role] || g.role)));
-  const imageUrl = person.photo_url || person.media[0]?.url;
+  const imageUrl = safeExternalUrl(person.photo_url || person.media[0]?.url, {
+    allowedHosts: trustedMediaHosts,
+  });
 
   return (
     <div className="py-10 sm:py-14">
@@ -159,8 +173,8 @@ export default async function PersonDetailPage({ params }: PageProps) {
                   yearCertainty={game.year_certainty}
                   publisherName={game.publisher?.name}
                   isSelfPublished={game.is_self_published}
-                  mechanics={game.mechanics.map((m: any) => m.mechanic.name)}
-                  categories={game.categories.map((c: any) => c.category.name)}
+                  mechanics={game.mechanics.map((m) => m.mechanic.name)}
+                  categories={game.categories.map((c) => c.category.name)}
                   status={game.status}
                   imageUrl={game.media[0]?.url}
                 />

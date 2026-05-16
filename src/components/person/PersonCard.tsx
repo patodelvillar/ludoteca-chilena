@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { safeExternalUrl, trustedMediaHosts } from "@/lib/url";
 
 interface PersonCardProps {
   slug: string;
@@ -17,6 +18,7 @@ export function PersonCard({
 }: PersonCardProps) {
   // Deduplicar y tomar solo hasta 3 roles para mostrar
   const uniqueRoles = Array.from(new Set(roles)).slice(0, 3);
+  const safeImageUrl = safeExternalUrl(imageUrl, { allowedHosts: trustedMediaHosts });
 
   return (
     <Link href={`/personas/${slug}`} className="block group">
@@ -36,9 +38,9 @@ export function PersonCard({
               border: "2px solid var(--color-brand-blue-light)",
             }}
           >
-            {imageUrl ? (
+            {safeImageUrl ? (
               <img
-                src={imageUrl}
+                src={safeImageUrl}
                 alt={displayName}
                 className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
               />

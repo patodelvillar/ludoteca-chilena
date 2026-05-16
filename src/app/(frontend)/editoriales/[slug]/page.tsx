@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { GameCard } from "@/components/game/GameCard";
+import { safeExternalUrl, trustedMediaHosts } from "@/lib/url";
 
 interface PageProps {
   params: Promise<{ slug: string }>;
@@ -10,8 +11,12 @@ interface PageProps {
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { slug } = await params;
-  const publisher = await prisma.publisher.findUnique({
-    where: { slug },
+  const publisher = await prisma.publisher.findFirst({
+    where: {
+      slug,
+      content_status: "published",
+      published_games: { some: { content_status: "published" } },
+    },
   });
   if (!publisher) return { title: "Editorial no encontrada" };
 
@@ -24,8 +29,12 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 export default async function PublisherDetailPage({ params }: PageProps) {
   const { slug } = await params;
 
-  const publisher = await prisma.publisher.findUnique({
-    where: { slug },
+  const publisher = await prisma.publisher.findFirst({
+    where: {
+      slug,
+      content_status: "published",
+      published_games: { some: { content_status: "published" } },
+    },
     include: {
       published_games: {
         where: { content_status: "published" },
@@ -35,7 +44,11 @@ export default async function PublisherDetailPage({ params }: PageProps) {
           media: { where: { is_primary: true }, take: 1 },
         },
         orderBy: { year_published: "desc" },
-      }
+      },
+      media: {
+        orderBy: [{ is_primary: "desc" }, { created_at: "desc" }],
+        take: 1,
+      },
     },
   });
 
@@ -45,6 +58,9 @@ export default async function PublisherDetailPage({ params }: PageProps) {
   const yearsActive = publisher.founded_year 
     ? `${publisher.founded_year} — ${publisher.closed_year || 'Presente'}`
     : "Año de fundación desconocido";
+  const logoUrl = safeExternalUrl(publisher.media[0]?.url, {
+    allowedHosts: trustedMediaHosts,
+  });
 
   return (
     <div className="py-10 sm:py-14">
@@ -63,7 +79,17 @@ export default async function PublisherDetailPage({ params }: PageProps) {
 
         <div className="mb-12 p-8 rounded-2xl" style={{ border: "1px solid var(--color-border)", background: "var(--color-white)" }}>
           <div className="flex flex-col md:flex-row justify-between md:items-center gap-6 mb-6">
-            <div>
+            <div className="flex flex-col gap-5 sm:flex-row sm:items-center">
+              <div className="flex h-24 w-24 flex-shrink-0 items-center justify-center overflow-hidden rounded-xl border border-[var(--color-border)] bg-white">
+                {logoUrl ? (
+                  <img src={logoUrl} alt={`Logo de ${publisher.name}`} className="h-full w-full object-contain p-3" />
+                ) : (
+                  <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="var(--color-brand-blue-light)" strokeWidth="2">
+                    <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20" />
+                  </svg>
+                )}
+              </div>
+              <div>
               <div className="flex items-center gap-3 mb-2">
                 <h1
                   className="text-3xl sm:text-4xl font-bold"
@@ -91,6 +117,7 @@ export default async function PublisherDetailPage({ params }: PageProps) {
                   <polyline points="12 6 12 12 16 14" />
                 </svg>
                 {yearsActive}
+              </div>
               </div>
             </div>
 
@@ -122,8 +149,8 @@ export default async function PublisherDetailPage({ params }: PageProps) {
                 yearCertainty={game.year_certainty}
                 publisherName={publisher.name}
                 isSelfPublished={game.is_self_published}
-                mechanics={game.mechanics.map((m: any) => m.mechanic.name)}
-                categories={game.categories.map((c: any) => c.category.name)}
+                mechanics={game.mechanics.map((m) => m.mechanic.name)}
+                categories={game.categories.map((c) => c.category.name)}
                 status={game.status}
                 imageUrl={game.media[0]?.url}
               />

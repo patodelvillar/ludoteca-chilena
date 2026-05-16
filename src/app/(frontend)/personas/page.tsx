@@ -23,32 +23,37 @@ const roleMap: Record<string, string> = {
 
 export default async function PersonasPage() {
   const people = await prisma.person.findMany({
+    where: {
+      content_status: "published",
+      games: { some: { game: { content_status: "published" } } },
+    },
     include: {
       games: {
+        where: {
+          game: { content_status: "published" },
+        },
         select: {
           role: true,
           game: {
-            select: { content_status: true }
+            select: { id: true, content_status: true }
           }
         }
       },
       media: {
+        orderBy: [{ is_primary: "desc" }, { created_at: "desc" }],
         take: 1,
       }
     },
     orderBy: { display_name: "asc" },
   });
 
-  // Filtrar personas que tengan al menos un juego publicado y mapear los roles
+  // Mapear roles de juegos publicados.
   const activePeople = people
-    .filter(person => person.games.some(g => g.game.content_status === "published"))
-    .map(person => {
+    .map((person) => {
       const allRoles = person.games
-        .filter(g => g.game.content_status === "published")
-        .map(g => roleMap[g.role] || g.role);
+        .map((g) => roleMap[g.role] || g.role);
       
-      const publishedGamesCount = new Set(person.games.filter(g => g.game.content_status === "published").map(g => g.role)).size; // Esto no es el count exacto de juegos distintos, arreglemos:
-      const uniqueGamesCount = new Set(person.games.filter(g => g.game.content_status === "published").map(g => g.game)).size;
+      const uniqueGamesCount = new Set(person.games.map((g) => g.game.id)).size;
 
       return {
         ...person,

@@ -3,6 +3,7 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { decadeOf, getDecadeContext } from "@/lib/decadeContext";
 import { formatYear } from "@/lib/year";
+import { safeExternalUrl, trustedMediaHosts } from "@/lib/url";
 
 export const metadata: Metadata = {
   title: "Línea de Tiempo | Ludoteca Chilena",
@@ -420,6 +421,7 @@ function GameCard({ item }: { item: GameItem }) {
   const { game } = item;
   const yearLabel = formatYear(item.year, item.year_certainty, item.year_display);
   const isApprox = item.year_certainty === "circa" || item.year_certainty === "decade";
+  const imageUrl = safeExternalUrl(game.media[0]?.url, { allowedHosts: trustedMediaHosts });
 
   return (
     <li>
@@ -432,9 +434,9 @@ function GameCard({ item }: { item: GameItem }) {
           className="w-16 h-16 rounded-md overflow-hidden flex-shrink-0"
           style={{ background: "var(--color-brand-blue-pale)" }}
         >
-          {game.media[0]?.url ? (
+          {imageUrl ? (
             <img
-              src={game.media[0].url}
+              src={imageUrl}
               alt={game.title}
               className="w-full h-full object-cover group-hover:scale-105 transition-transform"
             />

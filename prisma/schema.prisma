@@ -514,6 +514,7 @@ model User {
   username       String     @unique
   email          String     @unique
   name           String?
+  password_hash  String?
   avatar_url     String?
   role           UserRole   @default(user)
   is_banned      Boolean    @default(false)

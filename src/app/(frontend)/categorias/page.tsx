@@ -10,7 +10,12 @@ export const metadata: Metadata = {
 export default async function CategoriesPage() {
   const categories = await prisma.category.findMany({
     include: {
-      _count: { select: { games: true } }
+      games: {
+        where: {
+          game: { content_status: "published" },
+        },
+        select: { game_id: true },
+      },
     },
     orderBy: { name: "asc" }
   });
@@ -23,7 +28,7 @@ export default async function CategoriesPage() {
           {categories.map((cat) => (
             <Link key={cat.id} href={`/categorias/${cat.slug}`} className="block p-4 bg-white border border-[var(--color-border)] rounded-xl hover:border-[var(--color-brand-blue)] hover:shadow-md transition-all">
               <h2 className="text-lg font-bold text-[var(--color-brand-blue)]">{cat.name}</h2>
-              <p className="text-sm text-[var(--color-text-secondary)] mt-1">{cat._count.games} {cat._count.games === 1 ? 'juego' : 'juegos'}</p>
+              <p className="text-sm text-[var(--color-text-secondary)] mt-1">{cat.games.length} {cat.games.length === 1 ? 'juego' : 'juegos'}</p>
             </Link>
           ))}
         </div>

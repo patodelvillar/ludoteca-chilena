@@ -10,7 +10,12 @@ export const metadata: Metadata = {
 export default async function MechanicsPage() {
   const mechanics = await prisma.mechanic.findMany({
     include: {
-      _count: { select: { games: true } }
+      games: {
+        where: {
+          game: { content_status: "published" },
+        },
+        select: { game_id: true },
+      },
     },
     orderBy: { name: "asc" }
   });
@@ -23,7 +28,7 @@ export default async function MechanicsPage() {
           {mechanics.map((mech) => (
             <Link key={mech.id} href={`/mecanicas/${mech.slug}`} className="block p-4 bg-white border border-[var(--color-border)] rounded-xl hover:border-[var(--color-brand-blue)] hover:shadow-md transition-all">
               <h2 className="text-lg font-bold text-[var(--color-brand-blue)]">{mech.name}</h2>
-              <p className="text-sm text-[var(--color-text-secondary)] mt-1">{mech._count.games} {mech._count.games === 1 ? 'juego' : 'juegos'}</p>
+              <p className="text-sm text-[var(--color-text-secondary)] mt-1">{mech.games.length} {mech.games.length === 1 ? 'juego' : 'juegos'}</p>
             </Link>
           ))}
         </div>

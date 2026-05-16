@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import GameTabs from "@/components/game/GameTabs";
 import ShareButton from "@/components/game/ShareButton";
+import { safeExternalUrl, trustedBggHosts, trustedMediaHosts } from "@/lib/url";
 
 interface PageProps {
   params: Promise<{ slug: string }>;
@@ -11,15 +12,19 @@ interface PageProps {
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { slug } = await params;
-  const game = await prisma.game.findUnique({
-    where: { slug },
+  const game = await prisma.game.findFirst({
+    where: { slug, content_status: "published" },
   });
   if (!game) return { title: "Juego no encontrado" };
 
   return {
     title: game.title,
-    description: game.description || `${game.title} — juego de mesa chileno en Ludoteca Chilena`,
+    description: stripHtml(game.description) || `${game.title} — juego de mesa chileno en Ludoteca Chilena`,
   };
+}
+
+function stripHtml(value: string | null | undefined) {
+  return value?.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
 }
 
 function formatYear(year: number | null | undefined, certainty: string | null | undefined): string {
@@ -60,8 +65,8 @@ const originTypeLabels: Record<string, string> = {
 export default async function GameDetailPage({ params }: PageProps) {
   const { slug } = await params;
 
-  const game = await prisma.game.findUnique({
-    where: { slug },
+  const game = await prisma.game.findFirst({
+    where: { slug, content_status: "published" },
     include: {
       publisher: true,
       distributor: true,
@@ -81,6 +86,7 @@ export default async function GameDetailPage({ params }: PageProps) {
   if (!game) notFound();
 
   const primaryImage = game.media.find((m) => m.is_primary) || game.media[0];
+  const primaryImageUrl = safeExternalUrl(primaryImage?.url, { allowedHosts: trustedMediaHosts });
   const galleryMedia = game.media.filter((m) => m.type !== "rulebook");
   const rulebookMedia = game.media.filter((m) => m.type === "rulebook");
 
@@ -141,7 +147,7 @@ export default async function GameDetailPage({ params }: PageProps) {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
           {/* Left column — Image */}
           <div className="lg:col-span-1">
-            {primaryImage?.url ? (
+            {primaryImageUrl ? (
               <div
                 className="rounded-2xl overflow-hidden"
                 style={{
@@ -150,7 +156,7 @@ export default async function GameDetailPage({ params }: PageProps) {
                 }}
               >
                 <img
-                  src={primaryImage.url}
+                  src={primaryImageUrl}
                   alt={game.title}
                   className="w-full h-auto block"
                 />
@@ -486,6 +492,12 @@ function CreditRow({
   externalLink?: { url: string; label: string };
 }) {
   if (!value && (!links || links.length === 0) && !externalLink) return null;
+  const safeExternalLink = externalLink
+    ? safeExternalUrl(externalLink.url, { allowedHosts: trustedBggHosts })
+    : null;
+  if (externalLink && !safeExternalLink && !value && (!links || links.length === 0)) {
+    return null;
+  }
   return (
     <div className="flex flex-wrap items-baseline gap-x-2">
       <dt
@@ -495,9 +507,9 @@ function CreditRow({
         {label}:
       </dt>
       <dd style={{ color: "var(--color-text-secondary)" }}>
-        {externalLink ? (
+        {externalLink && safeExternalLink ? (
           <a
-            href={externalLink.url}
+            href={safeExternalLink}
             target="_blank"
             rel="noopener noreferrer"
             className="font-semibold hover:underline inline-flex items-center gap-1"

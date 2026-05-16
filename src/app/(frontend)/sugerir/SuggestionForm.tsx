@@ -1,14 +1,16 @@
 "use client"
 
 import { useActionState } from "react"
-import { submitGameSuggestion } from "@/app/actions/suggest"
+import { submitGameSuggestion, type SuggestionFormState } from "@/app/actions/suggest"
+
+const initialState: SuggestionFormState = {
+  success: false,
+  message: "",
+  errors: {},
+}
 
 export function SuggestionForm() {
-  const [state, formAction, isPending] = useActionState(submitGameSuggestion, { 
-    success: false, 
-    message: "", 
-    errors: {} as Record<string, string[] | undefined>
-  } as any)
+  const [state, formAction, isPending] = useActionState(submitGameSuggestion, initialState)
 
   if (state.success) {
     return (
@@ -48,6 +50,15 @@ export function SuggestionForm() {
       </div>
 
       <hr className="my-8 border-[var(--color-border)]" />
+
+      <input
+        type="text"
+        name="website"
+        tabIndex={-1}
+        autoComplete="off"
+        className="hidden"
+        aria-hidden="true"
+      />
 
       <div className="space-y-6">
         <div>

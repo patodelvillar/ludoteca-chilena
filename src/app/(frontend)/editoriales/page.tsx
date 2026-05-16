@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { PublisherCard } from "@/components/publisher/PublisherCard";
 import { prisma } from "@/lib/prisma";
+import { safeExternalUrl, trustedMediaHosts } from "@/lib/url";
 
 export const metadata: Metadata = {
   title: "Editoriales Chilenas | Ludoteca Chilena",
@@ -9,25 +10,34 @@ export const metadata: Metadata = {
 
 export default async function EditorialesPage() {
   const publishers = await prisma.publisher.findMany({
+    where: {
+      content_status: "published",
+      published_games: { some: { content_status: "published" } },
+    },
     include: {
       published_games: {
+        where: { content_status: "published" },
         select: {
           content_status: true,
         }
-      }
+      },
+      media: {
+        orderBy: [{ is_primary: "desc" }, { created_at: "desc" }],
+        take: 1,
+      },
     },
     orderBy: { name: "asc" },
   });
 
   const activePublishers = publishers
-    .filter(pub => pub.published_games.some(g => g.content_status === "published"))
-    .map(pub => {
-      const publishedGamesCount = pub.published_games.filter(g => g.content_status === "published").length;
-      return {
-        ...pub,
-        gameCount: publishedGamesCount,
-      };
-    });
+    .map((pub) => {
+      const publishedGamesCount = pub.published_games.length;
+        return {
+          ...pub,
+          gameCount: publishedGamesCount,
+          logoUrl: safeExternalUrl(pub.media[0]?.url, { allowedHosts: trustedMediaHosts }),
+        };
+      });
 
   return (
     <div className="py-10 sm:py-14">
@@ -55,6 +65,7 @@ export default async function EditorialesPage() {
               name={pub.name}
               status={pub.status}
               gameCount={pub.gameCount}
+              logoUrl={pub.logoUrl}
             />
           ))}
         </div>

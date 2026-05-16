@@ -5,6 +5,7 @@ interface PublisherCardProps {
   name: string;
   status: string;
   gameCount: number;
+  logoUrl?: string | null;
 }
 
 export function PublisherCard({
@@ -12,6 +13,7 @@ export function PublisherCard({
   name,
   status,
   gameCount,
+  logoUrl,
 }: PublisherCardProps) {
   const isInactive = status === "inactive";
 
@@ -28,15 +30,19 @@ export function PublisherCard({
       >
         <div className="flex items-start justify-between mb-4">
           <div
-            className="w-12 h-12 rounded-lg flex items-center justify-center flex-shrink-0"
+            className="w-12 h-12 rounded-lg flex items-center justify-center flex-shrink-0 overflow-hidden"
             style={{
               background: "var(--color-brand-blue-pale)",
               color: "var(--color-brand-blue)",
             }}
           >
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20" />
-            </svg>
+            {logoUrl ? (
+              <img src={logoUrl} alt={`Logo de ${name}`} className="h-full w-full object-contain bg-white p-1.5" />
+            ) : (
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20" />
+              </svg>
+            )}
           </div>
 
           <span

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { buildEmbedUrl, platformLabels, type VideoPlatform } from "@/lib/video";
+import { safeExternalUrl, trustedMediaHosts, trustedVideoHosts } from "@/lib/url";
 
 type TabKey = "descripcion" | "galeria" | "videos" | "archivos" | "ediciones" | "fuentes";
 
@@ -242,9 +243,10 @@ function DescripcionPanel({
       {description ? (
         <div>
           <SectionTitle>Descripción</SectionTitle>
-          <div className="prose-ludoteca">
-            <p>{description}</p>
-          </div>
+          <div
+            className="prose-ludoteca space-y-4 leading-7 [&_a]:font-semibold [&_a]:text-[var(--color-brand-blue)] [&_a]:underline [&_h2]:text-2xl [&_h3]:text-xl [&_li]:ml-5 [&_ol]:list-decimal [&_ul]:list-disc"
+            dangerouslySetInnerHTML={{ __html: description }}
+          />
         </div>
       ) : (
         <EmptyState message="Aún no hay una descripción para este juego." />
@@ -313,30 +315,45 @@ function GaleriaPanel({ items }: { items: MediaItem[] }) {
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
       {items.map((m) => (
-        <figure
-          key={m.id}
-          className="rounded-2xl overflow-hidden border bg-white"
-          style={{ borderColor: "var(--color-border)" }}
-        >
-          <div
-            className="aspect-square overflow-hidden"
-            style={{ background: "var(--color-brand-blue-pale)" }}
+        <GalleryItem key={m.id} item={m} />
+      ))}
+    </div>
+  );
+}
+
+function GalleryItem({ item: m }: { item: MediaItem }) {
+  const safeUrl = safeExternalUrl(m.url, { allowedHosts: trustedMediaHosts });
+
+  return (
+    <figure
+      className="rounded-2xl overflow-hidden border bg-white"
+      style={{ borderColor: "var(--color-border)" }}
+    >
+      <div
+        className="aspect-square overflow-hidden flex items-center justify-center"
+        style={{ background: "var(--color-brand-blue-pale)" }}
+      >
+        {safeUrl ? (
+          <img
+            src={safeUrl}
+            alt={m.alt_text || mediaTypeMap[m.type] || "Imagen del juego"}
+            className="w-full h-full object-cover"
+          />
+        ) : (
+          <p className="text-sm" style={{ color: "var(--color-brand-blue-light)" }}>
+            Imagen no disponible
+          </p>
+        )}
+      </div>
+      <figcaption className="p-4 text-sm">
+        <div className="flex items-center justify-between gap-2 mb-1">
+          <span
+            className="text-xs uppercase tracking-wider font-semibold"
+            style={{ color: "var(--color-brand-blue-light)" }}
           >
-            <img
-              src={m.url}
-              alt={m.alt_text || mediaTypeMap[m.type] || "Imagen del juego"}
-              className="w-full h-full object-cover"
-            />
-          </div>
-          <figcaption className="p-4 text-sm">
-            <div className="flex items-center justify-between gap-2 mb-1">
-              <span
-                className="text-xs uppercase tracking-wider font-semibold"
-                style={{ color: "var(--color-brand-blue-light)" }}
-              >
-                {mediaTypeMap[m.type] || m.type}
-              </span>
-              {m.circa_year && (
+            {mediaTypeMap[m.type] || m.type}
+          </span>
+          {m.circa_year && (
                 <span
                   className="text-xs px-2 py-0.5 rounded-full"
                   style={{
@@ -346,25 +363,23 @@ function GaleriaPanel({ items }: { items: MediaItem[] }) {
                 >
                   {m.circa_year}
                 </span>
-              )}
-            </div>
-            {m.alt_text && (
-              <p style={{ color: "var(--color-text-secondary)" }}>{m.alt_text}</p>
-            )}
-            {m.source_description && (
-              <p className="mt-2 text-xs" style={{ color: "var(--color-text-muted)" }}>
-                Fuente: {m.source_description}
-              </p>
-            )}
-            {m.copyright_notes && (
-              <p className="mt-1 text-xs italic" style={{ color: "var(--color-text-muted)" }}>
-                {m.copyright_notes}
-              </p>
-            )}
-          </figcaption>
-        </figure>
-      ))}
-    </div>
+          )}
+        </div>
+        {m.alt_text && (
+          <p style={{ color: "var(--color-text-secondary)" }}>{m.alt_text}</p>
+        )}
+        {m.source_description && (
+          <p className="mt-2 text-xs" style={{ color: "var(--color-text-muted)" }}>
+            Fuente: {m.source_description}
+          </p>
+        )}
+        {m.copyright_notes && (
+          <p className="mt-1 text-xs italic" style={{ color: "var(--color-text-muted)" }}>
+            {m.copyright_notes}
+          </p>
+        )}
+      </figcaption>
+    </figure>
   );
 }
 
@@ -376,6 +391,7 @@ function VideosPanel({ items }: { items: VideoItem[] }) {
     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
       {items.map((v) => {
         const embed = buildEmbedUrl(v.platform, v.video_id);
+        const safeOriginalUrl = safeExternalUrl(v.url, { allowedHosts: trustedVideoHosts });
         const isVertical = v.platform === "tiktok" || v.platform === "instagram";
         const aspectClass = isVertical ? "aspect-[9/16]" : "aspect-video";
         return (
@@ -411,15 +427,17 @@ function VideosPanel({ items }: { items: VideoItem[] }) {
                 >
                   {platformLabels[v.platform]}
                 </span>
-                <a
-                  href={v.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-xs hover:underline"
-                  style={{ color: "var(--color-brand-red)" }}
-                >
-                  Ver original ↗
-                </a>
+                {safeOriginalUrl && (
+                  <a
+                    href={safeOriginalUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-xs hover:underline"
+                    style={{ color: "var(--color-brand-red)" }}
+                  >
+                    Ver original ↗
+                  </a>
+                )}
               </div>
               {v.title && (
                 <p className="font-semibold" style={{ color: "var(--color-brand-blue)" }}>
@@ -449,61 +467,76 @@ function ArchivosPanel({ items }: { items: MediaItem[] }) {
   return (
     <ul className="space-y-3">
       {items.map((m) => (
-        <li
-          key={m.id}
-          className="flex items-start gap-4 p-4 rounded-2xl border bg-white hover:border-[var(--color-brand-blue)] transition-colors"
-          style={{ borderColor: "var(--color-border)" }}
-        >
-          <div
-            className="flex-shrink-0 w-12 h-12 rounded-xl flex items-center justify-center"
-            style={{ background: "var(--color-brand-blue-pale)" }}
-          >
-            <svg
-              width="24"
-              height="24"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="var(--color-brand-blue)"
-              strokeWidth="2"
-            >
-              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-              <polyline points="14 2 14 8 20 8" />
-            </svg>
-          </div>
-          <div className="flex-1 min-w-0">
-            <a
-              href={m.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="font-semibold hover:underline block"
-              style={{ color: "var(--color-brand-blue)" }}
-            >
-              {m.filename || m.alt_text || "Reglamento"}
-            </a>
-            <div
-              className="flex flex-wrap gap-x-3 gap-y-1 mt-1 text-xs"
-              style={{ color: "var(--color-text-muted)" }}
-            >
-              <span>Reglamento</span>
-              {m.circa_year && <span>· {m.circa_year}</span>}
-              {m.source_description && <span>· {m.source_description}</span>}
-            </div>
-          </div>
-          <a
-            href={m.url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex-shrink-0 text-sm font-semibold px-3 py-1.5 rounded-full"
-            style={{
-              background: "var(--color-brand-blue)",
-              color: "#fff",
-            }}
-          >
-            Descargar
-          </a>
-        </li>
+        <ArchiveItem key={m.id} item={m} />
       ))}
     </ul>
+  );
+}
+
+function ArchiveItem({ item: m }: { item: MediaItem }) {
+  const safeUrl = safeExternalUrl(m.url, { allowedHosts: trustedMediaHosts });
+
+  return (
+    <li
+      className="flex items-start gap-4 p-4 rounded-2xl border bg-white hover:border-[var(--color-brand-blue)] transition-colors"
+      style={{ borderColor: "var(--color-border)" }}
+    >
+      <div
+        className="flex-shrink-0 w-12 h-12 rounded-xl flex items-center justify-center"
+        style={{ background: "var(--color-brand-blue-pale)" }}
+      >
+        <svg
+          width="24"
+          height="24"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="var(--color-brand-blue)"
+          strokeWidth="2"
+        >
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+          <polyline points="14 2 14 8 20 8" />
+        </svg>
+      </div>
+      <div className="flex-1 min-w-0">
+        {safeUrl ? (
+          <a
+            href={safeUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="font-semibold hover:underline block"
+            style={{ color: "var(--color-brand-blue)" }}
+          >
+            {m.filename || m.alt_text || "Reglamento"}
+          </a>
+        ) : (
+          <p className="font-semibold" style={{ color: "var(--color-text-muted)" }}>
+            {m.filename || m.alt_text || "Reglamento no disponible"}
+          </p>
+        )}
+        <div
+          className="flex flex-wrap gap-x-3 gap-y-1 mt-1 text-xs"
+          style={{ color: "var(--color-text-muted)" }}
+        >
+          <span>Reglamento</span>
+          {m.circa_year && <span>· {m.circa_year}</span>}
+          {m.source_description && <span>· {m.source_description}</span>}
+        </div>
+      </div>
+      {safeUrl && (
+        <a
+          href={safeUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex-shrink-0 text-sm font-semibold px-3 py-1.5 rounded-full"
+          style={{
+            background: "var(--color-brand-blue)",
+            color: "#fff",
+          }}
+        >
+          Descargar
+        </a>
+      )}
+    </li>
   );
 }
 
@@ -601,11 +634,28 @@ function FuentesPanel({ items }: { items: SourceItem[] }) {
   return (
     <ol className="space-y-4">
       {items.map(({ source, notes }, idx) => (
-        <li
-          key={source.id}
-          className="p-5 rounded-2xl border bg-white flex gap-4"
-          style={{ borderColor: "var(--color-border)" }}
-        >
+        <SourceItemRow key={source.id} source={source} notes={notes} index={idx} />
+      ))}
+    </ol>
+  );
+}
+
+function SourceItemRow({
+  source,
+  notes,
+  index,
+}: {
+  source: SourceItem["source"];
+  notes: string | null;
+  index: number;
+}) {
+  const safeUrl = safeExternalUrl(source.url);
+
+  return (
+    <li
+      className="p-5 rounded-2xl border bg-white flex gap-4"
+      style={{ borderColor: "var(--color-border)" }}
+    >
           <span
             className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold"
             style={{
@@ -613,7 +663,7 @@ function FuentesPanel({ items }: { items: SourceItem[] }) {
               color: "var(--color-brand-blue)",
             }}
           >
-            {idx + 1}
+        {index + 1}
           </span>
           <div className="flex-1 min-w-0">
             <div className="flex flex-wrap items-baseline gap-2 mb-1">
@@ -636,9 +686,9 @@ function FuentesPanel({ items }: { items: SourceItem[] }) {
               className="font-semibold"
               style={{ color: "var(--color-brand-blue)" }}
             >
-              {source.url ? (
+          {safeUrl ? (
                 <a
-                  href={source.url}
+              href={safeUrl}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="hover:underline"
@@ -676,7 +726,5 @@ function FuentesPanel({ items }: { items: SourceItem[] }) {
             )}
           </div>
         </li>
-      ))}
-    </ol>
   );
 }
