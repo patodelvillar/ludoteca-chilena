@@ -11,6 +11,10 @@ export const metadata: Metadata = {
     "Recorrido cronológico por el juego de mesa chileno: hitos históricos y publicaciones desde los primeros registros hasta la actualidad.",
 };
 
+// Render dinámico para reflejar inmediatamente los cambios desde el admin
+// (TimelineEvents y juegos publicados/despublicados)
+export const dynamic = "force-dynamic";
+
 type GameRow = Awaited<ReturnType<typeof fetchGames>>[number];
 type EventRow = Awaited<ReturnType<typeof fetchEvents>>[number];
 
