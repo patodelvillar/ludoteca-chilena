@@ -3,13 +3,14 @@ import Link from "next/link";
 import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { AdminSectionHeader } from "@/components/admin/AdminSectionHeader";
+import { AdminSearchInput } from "@/components/admin/AdminSearchInput";
 
 export const metadata: Metadata = {
   title: "Juegos | Admin",
 };
 
 interface AdminGamesPageProps {
-  searchParams: Promise<{ filtro?: string }>;
+  searchParams: Promise<{ filtro?: string; q?: string }>;
 }
 
 const filterLabels: Record<string, string> = {
@@ -18,13 +19,28 @@ const filterLabels: Record<string, string> = {
 };
 
 export default async function AdminGamesPage({ searchParams }: AdminGamesPageProps) {
-  const { filtro } = await searchParams;
-  const where: Prisma.GameWhereInput =
+  const { filtro, q } = await searchParams;
+  const query = q?.trim() ?? "";
+
+  const filterWhere: Prisma.GameWhereInput =
     filtro === "sin-portada"
       ? { content_status: "published", media: { none: { is_primary: true } } }
       : filtro === "no-verificados"
         ? { content_status: "published", is_verified: false }
         : {};
+
+  const searchWhere: Prisma.GameWhereInput = query
+    ? {
+        OR: [
+          { title: { contains: query, mode: "insensitive" } },
+          { publisher: { name: { contains: query, mode: "insensitive" } } },
+          { distributor: { name: { contains: query, mode: "insensitive" } } },
+        ],
+      }
+    : {};
+
+  const where: Prisma.GameWhereInput =
+    query && filtro ? { AND: [filterWhere, searchWhere] } : { ...filterWhere, ...searchWhere };
 
   const games = await prisma.game.findMany({
     where,
@@ -57,16 +73,27 @@ export default async function AdminGamesPage({ searchParams }: AdminGamesPagePro
         }
       />
 
+      <div className="mb-6">
+        <AdminSearchInput placeholder="Buscar por título o editorial…" />
+      </div>
+
       <div className="mb-4 flex flex-wrap items-center gap-2">
         {activeFilterLabel ? (
           <>
             <span className="rounded-full bg-[var(--color-brand-blue-pale)] px-3 py-1 text-xs font-bold text-[var(--color-brand-blue)]">
               {activeFilterLabel}: {games.length}
             </span>
-            <Link href="/admin/juegos" className="admin-button-secondary px-3 py-1.5 text-xs">
+            <Link
+              href={query ? `/admin/juegos?q=${encodeURIComponent(query)}` : "/admin/juegos"}
+              className="admin-button-secondary px-3 py-1.5 text-xs"
+            >
               Limpiar filtro
             </Link>
           </>
+        ) : query ? (
+          <span className="text-sm text-[var(--color-text-muted)]">
+            {games.length} resultado{games.length === 1 ? "" : "s"} para “{query}”.
+          </span>
         ) : (
           <span className="text-sm text-[var(--color-text-muted)]">
             Mostrando los últimos {games.length} juegos.
@@ -121,7 +148,9 @@ export default async function AdminGamesPage({ searchParams }: AdminGamesPagePro
           ))}
           {games.length === 0 && (
             <p className="px-4 py-8 text-sm text-[var(--color-text-muted)]">
-              No hay juegos para este filtro.
+              {query
+                ? `No se encontraron juegos para “${query}”.`
+                : "No hay juegos para este filtro."}
             </p>
           )}
         </div>
