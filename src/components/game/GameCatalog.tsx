@@ -64,6 +64,13 @@ function numberFromTerm(term: string) {
   return match ? Number(match[0]) : null;
 }
 
+function matchesRange(value: number, min: number | null, max: number | null) {
+  if (min !== null && max !== null) return value >= min && value <= max;
+  if (min !== null) return value === min;
+  if (max !== null) return value === max;
+  return false;
+}
+
 function matchesTerm(game: GameCatalogItem, term: string) {
   const number = numberFromTerm(term);
   const searchableText = [
@@ -97,8 +104,7 @@ function matchesTerm(game: GameCatalogItem, term: string) {
     }
 
     if (/(min|mins|minuto|minutos|duracion|duración|tiempo)/.test(term)) {
-      const shortestKnownTime = game.min_playtime ?? game.max_playtime;
-      if (shortestKnownTime && shortestKnownTime <= number) return true;
+      if (matchesRange(number, game.min_playtime, game.max_playtime)) return true;
     }
 
     if (/(edad|anos|años|\\+|mayores)/.test(term) && game.min_age !== null && game.min_age <= number) {
