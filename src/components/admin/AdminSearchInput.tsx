@@ -21,8 +21,10 @@ export function AdminSearchInput({
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
-    setValue(searchParams.get(paramName) ?? "");
-  }, [searchParams, paramName]);
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+    };
+  }, []);
 
   function pushQuery(next: string) {
     const params = new URLSearchParams(searchParams.toString());
